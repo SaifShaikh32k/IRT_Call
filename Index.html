@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>User Location Form</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 12px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1e40af;
+    }
+    .msg {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Submit Location</h2>
+    <form id="dataForm">
+      <label>User ID</label>
+      <input type="text" id="userId" required />
+
+      <label>WID</label>
+      <input type="text" id="wid" required />
+
+      <label>Location</label>
+      <input type="text" id="location" required />
+
+      <button type="submit">Submit</button>
+    </form>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbw4RN0FpYXp-oTb-ggMbPwA9iO7CCLQpAnrDwGL_xYQeQFhK4p_FO_7nVkaAemcwBX3ZA/exec";
+
+    document.getElementById("dataForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const userId = document.getElementById("userId").value;
+      const wid = document.getElementById("wid").value;
+      const location = document.getElementById("location").value;
+
+      const formData = new FormData();
+      formData.append("userId", userId);
+      formData.append("wid", wid);
+      formData.append("location", location);
+
+      try {
+        await fetch(scriptURL, { method: "POST", body: formData });
+        document.getElementById("msg").innerText = "Data submitted successfully";
+        e.target.reset();
+      } catch (err) {
+        document.getElementById("msg").innerText = "Error submitting data";
+      }
+    });
+  </script>
+</body>
+</html>
