@@ -1,34 +1,127 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Picker Location</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <title>Picker Location Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      margin: 0;
+      padding: 15px;
+      color: #333;
+    }
+
+    .card {
+      background: #fff;
+      max-width: 900px;
+      margin: auto;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    h2 {
+      text-align: center;
+      color: #5a2dbd;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 12px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #764ba2;
+      box-shadow: 0 0 5px #764ba2;
+    }
+
+    #msg {
+      margin-top: 10px;
+      font-weight: bold;
+      color: green;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 14px;
+    }
+
+    th {
+      background: #764ba2;
+      color: white;
+      padding: 10px;
+      position: sticky;
+      top: 0;
+    }
+
+    td {
+      padding: 8px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    tr:nth-child(even) {
+      background: #f3f3ff;
+    }
+
+    tr:hover {
+      background: #e6ddff;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
 </head>
+
 <body>
 
-<h3>Picker Entry</h3>
+<div class="card">
+  <h2>📍 Picker Location Entry</h2>
 
-User ID<br>
-<input id="userId"><br><br>
+  <label>User ID</label>
+  <input id="userId" placeholder="Enter your User ID">
 
-Location<br>
-<input id="location"><br><br>
+  <label>Location</label>
+  <input id="location" placeholder="Scan / Enter Location">
 
-<p id="msg"></p>
+  <div class="hint">Press <b>Enter</b> after scanning location</div>
 
-<table border="1">
-  <thead>
-    <tr>
-      <th>Timestamp</th>
-      <th>User ID</th>
-      <th>Location</th>
-      <th>Floor</th>
-      <th>Status</th>
-      <th>Remark</th>
-    </tr>
-  </thead>
-  <tbody id="history"></tbody>
-</table>
+  <p id="msg"></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Timestamp</th>
+        <th>User ID</th>
+        <th>Location</th>
+        <th>Floor</th>
+        <th>Status</th>
+        <th>Remark</th>
+      </tr>
+    </thead>
+    <tbody id="history"></tbody>
+  </table>
+</div>
 
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQco974AYwWWRBhUmbWFddbTe3Wnt8Gmg4rcbr_7p9paO63JFd6he4OQPbFzHeFw0MDA/exec";
@@ -38,20 +131,30 @@ const locationEl = document.getElementById("location");
 const historyEl = document.getElementById("history");
 const msg = document.getElementById("msg");
 
-// Enter on Location → submit
-locationEl.addEventListener("keydown", e => {
-  if (e.key === "Enter") {
-    submitData();
+/* 🔹 Auto-load history on refresh if User ID exists */
+window.onload = () => {
+  const savedUser = localStorage.getItem("userId");
+  if (savedUser) {
+    userIdEl.value = savedUser;
+    loadHistory();
+    locationEl.focus();
   }
+};
+
+/* 🔹 Save User ID */
+userIdEl.addEventListener("change", () => {
+  localStorage.setItem("userId", userIdEl.value.trim());
+  loadHistory();
 });
 
-// Load history when User ID entered
-userIdEl.addEventListener("change", loadHistory);
+/* 🔹 Enter key submits location */
+locationEl.addEventListener("keydown", e => {
+  if (e.key === "Enter") submitData();
+});
 
 async function submitData() {
   const userId = userIdEl.value.trim();
   const location = locationEl.value.trim();
-
   if (!userId || !location) return;
 
   const fd = new FormData();
@@ -60,7 +163,8 @@ async function submitData() {
 
   await fetch(SCRIPT_URL, { method: "POST", body: fd });
 
-  msg.innerText = "Saved ✔";
+  msg.innerText = "✅ Location Saved Successfully";
+  setTimeout(() => msg.innerText = "", 2000);
 
   locationEl.value = "";
   locationEl.focus();
@@ -72,16 +176,23 @@ async function loadHistory() {
   const userId = userIdEl.value.trim();
   if (!userId) return;
 
-  const res = await fetch(`${SCRIPT_URL}?userId=${userId}`);
+  historyEl.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+
+  const res = await fetch(`${SCRIPT_URL}?userId=${encodeURIComponent(userId)}`);
   const data = await res.json();
 
   historyEl.innerHTML = "";
 
-  data.forEach(r => {
+  if (data.length === 0) {
+    historyEl.innerHTML = "<tr><td colspan='6'>No records found</td></tr>";
+    return;
+  }
+
+  data.forEach(row => {
     const tr = document.createElement("tr");
-    r.forEach(c => {
+    row.forEach(cell => {
       const td = document.createElement("td");
-      td.innerText = c;
+      td.textContent = cell;
       tr.appendChild(td);
     });
     historyEl.appendChild(tr);
