@@ -37,54 +37,46 @@
       border-radius: 6px;
       border: 1px solid #ccc;
     }
-    button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 12px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1e40af;
-    }
     .msg {
       margin-top: 12px;
       text-align: center;
       font-size: 14px;
+      color: green;
     }
   </style>
 </head>
 <body>
   <div class="card">
     <h2>Submit Location</h2>
-    <form id="dataForm">
-      <label>User ID</label>
-      <input type="text" id="userId" required />
 
-      <label>WID</label>
-      <input type="text" id="wid" required />
+    <label>User ID</label>
+    <input type="text" id="userId" required />
 
-      <label>Location</label>
-      <input type="text" id="location" required />
+    <label>WID</label>
+    <input type="text" id="wid" required />
 
-      <button type="submit">Submit</button>
-    </form>
+    <label>Location</label>
+    <input type="text" id="location" required />
+
     <div class="msg" id="msg"></div>
   </div>
 
   <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbw4RN0FpYXp-oTb-ggMbPwA9iO7CCLQpAnrDwGL_xYQeQFhK4p_FO_7nVkaAemcwBX3ZA/exec";
+    const scriptURL =
+      "https://script.google.com/macros/s/AKfycbw4RN0FpYXp-oTb-ggMbPwA9iO7CCLQpAnrDwGL_xYQeQFhK4p_FO_7nVkaAemcwBX3ZA/exec";
 
-    document.getElementById("dataForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    let isSubmitting = false;
 
-      const userId = document.getElementById("userId").value;
-      const wid = document.getElementById("wid").value;
-      const location = document.getElementById("location").value;
+    async function submitData() {
+      if (isSubmitting) return;
+
+      const userId = document.getElementById("userId").value.trim();
+      const wid = document.getElementById("wid").value.trim();
+      const location = document.getElementById("location").value.trim();
+
+      if (!userId || !wid || !location) return;
+
+      isSubmitting = true;
 
       const formData = new FormData();
       formData.append("userId", userId);
@@ -93,10 +85,23 @@
 
       try {
         await fetch(scriptURL, { method: "POST", body: formData });
-        document.getElementById("msg").innerText = "Data submitted successfully";
-        e.target.reset();
+        document.getElementById("msg").innerText = "✅ Data submitted successfully";
+
+        // Clear only location for next scan
+        document.getElementById("location").value = "";
+        document.getElementById("location").focus();
       } catch (err) {
-        document.getElementById("msg").innerText = "Error submitting data";
+        document.getElementById("msg").innerText = "❌ Error submitting data";
+      } finally {
+        isSubmitting = false;
+      }
+    }
+
+    // Auto submit on Enter key in Location field
+    document.getElementById("location").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitData();
       }
     });
   </script>
