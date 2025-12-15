@@ -196,8 +196,19 @@
       border-radius: 20px;
       font-size: 11px;
       font-weight: 600;
-      background: #10b981;
       color: white;
+    }
+
+    .status-open {
+      background: #f59e0b;
+    }
+
+    .status-resolved {
+      background: #10b981;
+    }
+
+    .status-irt {
+      background: #ef4444;
     }
 
     .record-details {
@@ -301,12 +312,16 @@
 
 <div class="stats-bar">
   <div class="stat-card">
-    <div class="stat-number" id="todayCount">0</div>
-    <div class="stat-label">Today</div>
+    <div class="stat-number" id="floorG">0</div>
+    <div class="stat-label">Ground</div>
   </div>
   <div class="stat-card">
-    <div class="stat-number" id="totalCount">0</div>
-    <div class="stat-label">Total</div>
+    <div class="stat-number" id="floor1">0</div>
+    <div class="stat-label">Floor 1</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-number" id="floor2">0</div>
+    <div class="stat-label">Floor 2</div>
   </div>
 </div>
 
@@ -328,8 +343,9 @@ const widEl = document.getElementById("wid");
 const locationEl = document.getElementById("location");
 const historyEl = document.getElementById("history");
 const msgEl = document.getElementById("msg");
-const todayCountEl = document.getElementById("todayCount");
-const totalCountEl = document.getElementById("totalCount");
+const floorGEl = document.getElementById("floorG");
+const floor1El = document.getElementById("floor1");
+const floor2El = document.getElementById("floor2");
 
 let cachedData = [];
 
@@ -409,6 +425,10 @@ async function loadHistory() {
   try {
     const res = await fetch(`${SCRIPT_URL}?userId=${encodeURIComponent(userId)}`);
     cachedData = await res.json();
+    
+    // Sort by timestamp descending (newest first)
+    cachedData.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+    
     renderHistory();
   } catch (err) {
     historyEl.innerHTML = '<div class="empty-state">⚠️ Error loading data</div>';
@@ -423,25 +443,39 @@ function renderHistory() {
         <div>No records yet</div>
       </div>
     `;
-    todayCountEl.textContent = "0";
-    totalCountEl.textContent = "0";
+    floorGEl.textContent = "0";
+    floor1El.textContent = "0";
+    floor2El.textContent = "0";
     return;
   }
 
-  const today = new Date().toDateString();
-  const todayRecords = cachedData.filter(row => {
-    const recordDate = new Date(row[0]).toDateString();
-    return recordDate === today;
+  // Calculate floor-wise counts
+  const floorCounts = { G: 0, "1": 0, "2": 0 };
+  cachedData.forEach(row => {
+    const floor = row[4]?.toString().toUpperCase();
+    if (floor === "G" || floor === "GROUND") floorCounts.G++;
+    else if (floor === "1" || floor === "FIRST") floorCounts["1"]++;
+    else if (floor === "2" || floor === "SECOND") floorCounts["2"]++;
   });
 
-  todayCountEl.textContent = todayRecords.length;
-  totalCountEl.textContent = cachedData.length;
+  floorGEl.textContent = floorCounts.G;
+  floor1El.textContent = floorCounts["1"];
+  floor2El.textContent = floorCounts["2"];
+
+  // Get status class
+  const getStatusClass = (status) => {
+    const s = status?.toLowerCase() || "";
+    if (s.includes("open")) return "status-open";
+    if (s.includes("resolved")) return "status-resolved";
+    if (s.includes("irt")) return "status-irt";
+    return "status-open";
+  };
 
   historyEl.innerHTML = cachedData.slice(0, 20).map(row => `
     <div class="record-card">
       <div class="record-header">
         <div class="record-time">${row[0]}</div>
-        <div class="record-status">${row[5] || 'Active'}</div>
+        <div class="record-status ${getStatusClass(row[5])}">${row[5] || 'Open'}</div>
       </div>
       <div class="record-details">
         <div class="record-item">
