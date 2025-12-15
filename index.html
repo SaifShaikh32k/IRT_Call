@@ -11,12 +11,11 @@
       background: linear-gradient(135deg, #667eea, #764ba2);
       margin: 0;
       padding: 15px;
-      color: #333;
     }
 
     .card {
-      background: #fff;
-      max-width: 900px;
+      background: white;
+      max-width: 950px;
       margin: auto;
       padding: 20px;
       border-radius: 12px;
@@ -26,13 +25,12 @@
     h2 {
       text-align: center;
       color: #5a2dbd;
-      margin-bottom: 20px;
     }
 
     label {
       font-weight: bold;
-      display: block;
       margin-top: 12px;
+      display: block;
     }
 
     input {
@@ -78,17 +76,11 @@
     }
 
     tr:nth-child(even) {
-      background: #f3f3ff;
+      background: #f4f2ff;
     }
 
     tr:hover {
       background: #e6ddff;
-    }
-
-    .hint {
-      font-size: 13px;
-      color: #666;
-      margin-top: 5px;
     }
   </style>
 </head>
@@ -96,15 +88,16 @@
 <body>
 
 <div class="card">
-  <h2>📍 Picker Location Entry</h2>
+  <h2>📦 Picker Entry</h2>
 
   <label>User ID</label>
-  <input id="userId" placeholder="Enter your User ID">
+  <input id="userId" placeholder="Enter User ID">
+
+  <label>WID</label>
+  <input id="wid" placeholder="Scan / Enter WID">
 
   <label>Location</label>
-  <input id="location" placeholder="Scan / Enter Location">
-
-  <div class="hint">Press <b>Enter</b> after scanning location</div>
+  <input id="location" placeholder="Scan Location">
 
   <p id="msg"></p>
 
@@ -113,6 +106,7 @@
       <tr>
         <th>Timestamp</th>
         <th>User ID</th>
+        <th>WID</th>
         <th>Location</th>
         <th>Floor</th>
         <th>Status</th>
@@ -127,43 +121,51 @@
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxQco974AYwWWRBhUmbWFddbTe3Wnt8Gmg4rcbr_7p9paO63JFd6he4OQPbFzHeFw0MDA/exec";
 
 const userIdEl = document.getElementById("userId");
+const widEl = document.getElementById("wid");
 const locationEl = document.getElementById("location");
 const historyEl = document.getElementById("history");
 const msg = document.getElementById("msg");
 
-/* 🔹 Auto-load history on refresh if User ID exists */
+/* 🔹 Load saved UserID + WID on refresh */
 window.onload = () => {
-  const savedUser = localStorage.getItem("userId");
-  if (savedUser) {
-    userIdEl.value = savedUser;
-    loadHistory();
-    locationEl.focus();
-  }
+  userIdEl.value = localStorage.getItem("userId") || "";
+  widEl.value = localStorage.getItem("wid") || "";
+  if (userIdEl.value) loadHistory();
 };
 
-/* 🔹 Save User ID */
+/* 🔹 Save UserID & WID */
 userIdEl.addEventListener("change", () => {
   localStorage.setItem("userId", userIdEl.value.trim());
   loadHistory();
 });
 
-/* 🔹 Enter key submits location */
+widEl.addEventListener("change", () => {
+  localStorage.setItem("wid", widEl.value.trim());
+});
+
+/* 🔹 Enter key submits */
 locationEl.addEventListener("keydown", e => {
   if (e.key === "Enter") submitData();
 });
 
 async function submitData() {
   const userId = userIdEl.value.trim();
+  const wid = widEl.value.trim();
   const location = locationEl.value.trim();
-  if (!userId || !location) return;
+
+  if (!userId || !wid || !location) {
+    alert("User ID, WID and Location are required");
+    return;
+  }
 
   const fd = new FormData();
   fd.append("userId", userId);
+  fd.append("wid", wid);
   fd.append("location", location);
 
   await fetch(SCRIPT_URL, { method: "POST", body: fd });
 
-  msg.innerText = "✅ Location Saved Successfully";
+  msg.innerText = "✅ Saved Successfully";
   setTimeout(() => msg.innerText = "", 2000);
 
   locationEl.value = "";
@@ -176,7 +178,7 @@ async function loadHistory() {
   const userId = userIdEl.value.trim();
   if (!userId) return;
 
-  historyEl.innerHTML = "<tr><td colspan='6'>Loading...</td></tr>";
+  historyEl.innerHTML = "<tr><td colspan='7'>Loading...</td></tr>";
 
   const res = await fetch(`${SCRIPT_URL}?userId=${encodeURIComponent(userId)}`);
   const data = await res.json();
@@ -184,7 +186,7 @@ async function loadHistory() {
   historyEl.innerHTML = "";
 
   if (data.length === 0) {
-    historyEl.innerHTML = "<tr><td colspan='6'>No records found</td></tr>";
+    historyEl.innerHTML = "<tr><td colspan='7'>No Records Found</td></tr>";
     return;
   }
 
