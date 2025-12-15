@@ -383,8 +383,9 @@ async function submitData() {
 
     showToast("✅ Saved Successfully", "#10b981");
     
+    widEl.value = "";
     locationEl.value = "";
-    locationEl.focus();
+    widEl.focus();
 
     // Optimistically add to cache
     const now = new Date();
